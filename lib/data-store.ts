@@ -21,6 +21,12 @@ type UpdatePayload = Partial<Omit<PersonRecord, "recordId" | "recordType" | "ful
     fullName?: string;
 };
 
+export type DistinctField =
+    | "influencerCategory"
+    | "engagementRateTier"
+    | "city"
+    | "collaborationStatus";
+
 export async function listRecords(
     type: RecordType,
     filters?: FilterOptions
@@ -149,6 +155,27 @@ export async function deleteRecord(
 
     await prisma.rawPeopleInfluencers.delete({ where: { recordId: id } });
     return true;
+}
+
+export async function listDistinctFieldValues(
+    field: DistinctField,
+    recordType?: RecordType
+): Promise<string[]> {
+    const rows = await prisma.rawPeopleInfluencers.findMany({
+        where: recordType ? { recordType } : undefined,
+        select: { [field]: true } as Record<string, true>,
+        distinct: [field] as Prisma.RawPeopleInfluencersScalarFieldEnum[],
+    });
+
+    const typedRows = rows as Array<Record<string, string | null>>;
+
+    return typedRows
+        .map((row) => {
+            const value = row[field];
+            return typeof value === "string" ? value.trim() : null;
+        })
+        .filter((value): value is string => !!value && value.length > 0)
+        .sort((a, b) => a.localeCompare(b));
 }
 
 function prepareCreateData(
