@@ -1,0 +1,39 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model RawPeopleInfluencers {
+    recordId                String   @id @map("record_id")
+    recordType              String   @map("record_type")
+    fullName                String?  @map("full_name")
+    preferredName           String?  @map("preferred_name")
+    gender                  String?
+    birthDate               DateTime? @map("birth_date") @db.Date
+    email                   String?
+    phone                   String?
+    city                    String?
+    country                 String?
+    occupation              String?
+    influencerCategory      String?  @map("influencer_category")
+    primaryPlatform         String?  @map("primary_platform")
+    followersCount          Int?     @map("followers_count")
+    totalFollowersCount     Int?     @map("total_followers_count")
+    engagementRate          Decimal? @map("engagement_rate") @db.Decimal(6, 3)
+    engagementRateTier      String?  @map("engagement_rate_tier")
+    interests               String?
+    notes                   String?
+    secondaryPlatform       String?  @map("secondary_platform")
+    secondaryFollowersCount Int?     @map("secondary_followers_count")
+    averageMonthlyReach     Int?     @map("average_monthly_reach")
+    collaborationStatus     String?  @map("collaboration_status")
+    languages               String?
+    portfolioUrl            String?  @map("portfolio_url")
+    lastContactDate         DateTime? @map("last_contact_date") @db.Date
+
+    @@map("raw_people_influencers")
+}
