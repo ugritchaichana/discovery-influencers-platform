@@ -13,8 +13,9 @@
     "postinstall": "prisma generate"
   },
   "engines": {
-    "node": ">=18.18.0"
+    "node": "20.x"
   },
+  "packageManager": "pnpm@10.22.0",
   "dependencies": {
     "@prisma/client": "5.22.0",
     "@radix-ui/react-alert-dialog": "1.1.15",
