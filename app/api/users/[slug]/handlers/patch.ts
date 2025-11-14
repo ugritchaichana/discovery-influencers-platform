@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { updateRecord } from "@/lib/data-store";
 import { toPersonResponse } from "@/app/api/utils/serialize-person-record";
-import { inferRecordTypeFromId } from "../../handlers/utils";
+import { inferRecordTypeFromId, parseRecordTypeInput } from "../../handlers/utils";
+import { canCreateRole, type Role } from "@/lib/auth/permissions";
+import { getCurrentUser } from "@/lib/auth/current-user";
+
+const ROLE_VALUES: Role[] = ["superadmin", "admin", "editor", "user"];
 
 export async function patchUserBySlug(
   request: NextRequest,
@@ -15,12 +19,16 @@ export async function patchUserBySlug(
     return NextResponse.json({ message: "slug is required" }, { status: 400 });
   }
 
-  const recordType = inferRecordTypeFromId(normalized);
-  if (!recordType) {
+  if (!inferRecordTypeFromId(normalized)) {
     return NextResponse.json(
       { message: "record_id must start with INF or IND" },
       { status: 400 }
     );
+  }
+
+  const currentUser = await getCurrentUser(request);
+  if (!currentUser) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
   let body: Record<string, unknown>;
@@ -30,19 +38,19 @@ export async function patchUserBySlug(
     return NextResponse.json({ message: "Invalid JSON body" }, { status: 400 });
   }
 
+  const updates: Record<string, unknown> = {};
+
   const recordTypeInput = getStringValue(body, ["record_type", "recordType"]);
   if (recordTypeInput) {
-    if (recordTypeInput.toLowerCase() !== recordType) {
+    const normalizedType = parseRecordTypeInput(recordTypeInput);
+    if (!normalizedType) {
       return NextResponse.json(
-        { message: "record_type does not match record_id prefix" },
+        { message: 'record_type must be either "individual" or "influencer"' },
         { status: 400 }
       );
     }
+    updates.recordType = normalizedType;
   }
-
-  const updates: Record<string, unknown> = {};
-
-  const today = new Date().toISOString().slice(0, 10);
 
   assignString(updates, "fullName", body, ["full_name", "fullName"]);
   assignString(updates, "preferredName", body, ["preferred_name", "preferredName"]);
@@ -61,6 +69,27 @@ export async function patchUserBySlug(
   assignString(updates, "notes", body, ["notes"]);
   assignString(updates, "portfolioUrl", body, ["portfolio_url", "portfolioUrl"]);
   assignString(updates, "collaborationStatus", body, ["collaboration_status", "collaborationStatus"]);
+
+  const roleInput = getStringValue(body, ["role"]);
+  if (roleInput === null) {
+    return NextResponse.json(
+      { message: "role cannot be null" },
+      { status: 400 }
+    );
+  }
+  if (roleInput !== undefined) {
+    const normalizedRole = roleInput.toLowerCase();
+    if (!ROLE_VALUES.includes(normalizedRole as Role)) {
+      return NextResponse.json(
+        { message: `role must be one of: ${ROLE_VALUES.join(", ")}` },
+        { status: 400 }
+      );
+    }
+    if (!canCreateRole(currentUser.role, normalizedRole as Role)) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+    updates.role = normalizedRole as Role;
+  }
 
   const followersCount = getNumberValue(body, ["followers_count", "followersCount"]);
   if (followersCount !== undefined) {
@@ -130,9 +159,8 @@ export async function patchUserBySlug(
   }
 
   assignString(updates, "lastContactDate", body, ["last_contact_date", "lastContactDate"]);
-  updates.lastContactDate = today;
 
-  const result = await updateRecord(recordType, normalized, updates);
+  const result = await updateRecord(normalized, updates);
   if (!result) {
     return NextResponse.json({ message: "Record not found" }, { status: 404 });
   }

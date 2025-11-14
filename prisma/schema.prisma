@@ -21,19 +21,28 @@ model RawPeopleInfluencers {
     occupation              String?
     influencerCategory      String?  @map("influencer_category")
     primaryPlatform         String?  @map("primary_platform")
-    followersCount          Int?     @map("followers_count")
-    totalFollowersCount     Int?     @map("total_followers_count")
+    followersCount          BigInt?  @map("followers_count") @db.BigInt
+    totalFollowersCount     BigInt?  @map("total_followers_count") @db.BigInt
     engagementRate          Decimal? @map("engagement_rate") @db.Decimal(6, 3)
     engagementRateTier      String?  @map("engagement_rate_tier")
     interests               String?
     notes                   String?
     secondaryPlatform       String?  @map("secondary_platform")
-    secondaryFollowersCount Int?     @map("secondary_followers_count")
-    averageMonthlyReach     Int?     @map("average_monthly_reach")
+    secondaryFollowersCount BigInt?  @map("secondary_followers_count") @db.BigInt
+    averageMonthlyReach     BigInt?  @map("average_monthly_reach") @db.BigInt
     collaborationStatus     String?  @map("collaboration_status")
     languages               String?
     portfolioUrl            String?  @map("portfolio_url")
     lastContactDate         DateTime? @map("last_contact_date") @db.Date
+    passwordHash            String?  @map("password_hash")
+    role                    Role     @default(user)
 
     @@map("raw_people_influencers")
+}
+
+enum Role {
+    superadmin
+    admin
+    editor
+    user
 }

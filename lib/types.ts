@@ -1,3 +1,5 @@
+import type { Role } from "./auth/permissions";
+
 export type RecordType = "individual" | "influencer";
 
 export interface PersonRecord {
@@ -27,6 +29,7 @@ export interface PersonRecord {
         languages?: string | null;
         portfolioUrl?: string | null;
         lastContactDate?: string | null;
+        role: Role;
 }
 
 export type InfluencerRecord = PersonRecord & {

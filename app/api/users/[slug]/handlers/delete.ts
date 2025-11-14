@@ -14,15 +14,14 @@ export async function deleteUserBySlug(
     return NextResponse.json({ message: "slug is required" }, { status: 400 });
   }
 
-  const recordType = inferRecordTypeFromId(normalized);
-  if (!recordType) {
+  if (!inferRecordTypeFromId(normalized)) {
     return NextResponse.json(
       { message: "record_id must start with INF or IND" },
       { status: 400 }
     );
   }
 
-  const deleted = await deleteRecord(recordType, normalized);
+  const deleted = await deleteRecord(normalized);
   if (!deleted) {
     return NextResponse.json({ message: "Record not found" }, { status: 404 });
   }

@@ -1,6 +1,7 @@
 import { Prisma, RawPeopleInfluencers } from "@prisma/client";
 
 import prisma from "./prisma";
+import type { Role } from "./auth/permissions";
 import { PersonRecord, RecordType } from "./types";
 
 type FilterOptions = {
@@ -19,6 +20,7 @@ type CreatePayload = Partial<Omit<PersonRecord, "recordType" | "recordId">> & {
 
 type UpdatePayload = Partial<Omit<PersonRecord, "recordId" | "recordType" | "fullName">> & {
     fullName?: string;
+    recordType?: RecordType;
 };
 
 export type DistinctField =
@@ -116,7 +118,6 @@ export async function createRecord(
 }
 
 export async function updateRecord(
-    type: RecordType,
     id: string,
     payload: UpdatePayload
 ): Promise<PersonRecord | null> {
@@ -124,7 +125,7 @@ export async function updateRecord(
         where: { recordId: id },
     });
 
-    if (!existing || existing.recordType !== type) {
+    if (!existing) {
         return null;
     }
 
@@ -142,14 +143,13 @@ export async function updateRecord(
 }
 
 export async function deleteRecord(
-    type: RecordType,
     id: string
 ): Promise<boolean> {
     const existing = await prisma.rawPeopleInfluencers.findUnique({
         where: { recordId: id },
     });
 
-    if (!existing || existing.recordType !== type) {
+    if (!existing) {
         return false;
     }
 
@@ -197,19 +197,20 @@ function prepareCreateData(
         occupation: payload.occupation ?? null,
         influencerCategory: payload.influencerCategory ?? null,
         primaryPlatform: payload.primaryPlatform ?? null,
-        followersCount: payload.followersCount ?? null,
-        totalFollowersCount: payload.totalFollowersCount ?? null,
+        followersCount: toBigIntOrNull(payload.followersCount),
+        totalFollowersCount: toBigIntOrNull(payload.totalFollowersCount),
         engagementRate: payload.engagementRate ?? null,
         engagementRateTier: payload.engagementRateTier ?? null,
         interests: payload.interests ?? null,
         notes: payload.notes ?? null,
         secondaryPlatform: payload.secondaryPlatform ?? null,
-        secondaryFollowersCount: payload.secondaryFollowersCount ?? null,
-        averageMonthlyReach: payload.averageMonthlyReach ?? null,
+        secondaryFollowersCount: toBigIntOrNull(payload.secondaryFollowersCount),
+        averageMonthlyReach: toBigIntOrNull(payload.averageMonthlyReach),
         collaborationStatus: payload.collaborationStatus ?? null,
         languages: payload.languages ?? null,
         portfolioUrl: payload.portfolioUrl ?? null,
         lastContactDate: parseDateInput(payload.lastContactDate),
+        role: payload.role ?? "user",
     };
 }
 
@@ -229,20 +230,21 @@ function prepareUpdateData(
     if (payload.occupation !== undefined) data.occupation = payload.occupation;
     if (payload.influencerCategory !== undefined) data.influencerCategory = payload.influencerCategory;
     if (payload.primaryPlatform !== undefined) data.primaryPlatform = payload.primaryPlatform;
-    if (payload.followersCount !== undefined) data.followersCount = payload.followersCount;
-    if (payload.totalFollowersCount !== undefined) data.totalFollowersCount = payload.totalFollowersCount;
+    if (payload.followersCount !== undefined) data.followersCount = toBigIntOrNull(payload.followersCount);
+    if (payload.totalFollowersCount !== undefined) data.totalFollowersCount = toBigIntOrNull(payload.totalFollowersCount);
     if (payload.engagementRate !== undefined) data.engagementRate = payload.engagementRate;
     if (payload.engagementRateTier !== undefined) data.engagementRateTier = payload.engagementRateTier;
     if (payload.interests !== undefined) data.interests = payload.interests;
     if (payload.notes !== undefined) data.notes = payload.notes;
     if (payload.secondaryPlatform !== undefined) data.secondaryPlatform = payload.secondaryPlatform;
-    if (payload.secondaryFollowersCount !== undefined) data.secondaryFollowersCount = payload.secondaryFollowersCount;
-    if (payload.averageMonthlyReach !== undefined) data.averageMonthlyReach = payload.averageMonthlyReach;
+    if (payload.secondaryFollowersCount !== undefined) data.secondaryFollowersCount = toBigIntOrNull(payload.secondaryFollowersCount);
+    if (payload.averageMonthlyReach !== undefined) data.averageMonthlyReach = toBigIntOrNull(payload.averageMonthlyReach);
     if (payload.collaborationStatus !== undefined) data.collaborationStatus = payload.collaborationStatus;
     if (payload.languages !== undefined) data.languages = payload.languages;
     if (payload.portfolioUrl !== undefined) data.portfolioUrl = payload.portfolioUrl;
     if (payload.lastContactDate !== undefined) data.lastContactDate = payload.lastContactDate ? parseDateInput(payload.lastContactDate) : null;
-
+    if (payload.recordType !== undefined) data.recordType = payload.recordType;
+    if (payload.role !== undefined) data.role = payload.role;
     return data;
 }
 
@@ -261,25 +263,26 @@ function toPersonRecord(row: RawPeopleInfluencers): PersonRecord {
         occupation: row.occupation ?? null,
         influencerCategory: row.influencerCategory ?? null,
         primaryPlatform: row.primaryPlatform ?? null,
-        followersCount: row.followersCount ?? null,
-        totalFollowersCount: row.totalFollowersCount ?? null,
+        followersCount: toNumber(row.followersCount),
+        totalFollowersCount: toNumber(row.totalFollowersCount),
         engagementRate: row.engagementRate ? row.engagementRate.toNumber() : null,
         engagementRateTier: row.engagementRateTier ?? null,
         interests: row.interests ?? null,
         notes: row.notes ?? null,
         secondaryPlatform: row.secondaryPlatform ?? null,
-        secondaryFollowersCount: row.secondaryFollowersCount ?? null,
-        averageMonthlyReach: row.averageMonthlyReach ?? null,
+        secondaryFollowersCount: toNumber(row.secondaryFollowersCount),
+        averageMonthlyReach: toNumber(row.averageMonthlyReach),
         collaborationStatus: row.collaborationStatus ?? null,
         languages: row.languages ?? null,
         portfolioUrl: row.portfolioUrl ?? null,
         lastContactDate: formatDate(row.lastContactDate),
+        role: row.role as Role,
     };
 }
 
 function buildFollowersRange(
     min?: number, max?: number
-): Prisma.IntNullableFilter | undefined {
+): Prisma.BigIntNullableFilter | undefined {
     const hasMin = typeof min === "number";
     const hasMax = typeof max === "number";
 
@@ -287,11 +290,26 @@ function buildFollowersRange(
         return undefined;
     }
 
-    const filter: Prisma.IntNullableFilter = {};
-    if (hasMin) filter.gte = min;
-    if (hasMax) filter.lte = max;
+    const filter: Prisma.BigIntNullableFilter = {};
+    if (hasMin) filter.gte = BigInt(Math.trunc(min));
+    if (hasMax) filter.lte = BigInt(Math.trunc(max));
 
     return filter;
+}
+
+function toBigIntOrNull(value?: number | null): bigint | null {
+    if (typeof value === "number" && Number.isFinite(value)) {
+        return BigInt(Math.trunc(value));
+    }
+    return null;
+}
+
+function toNumber(value: bigint | null): number | null {
+    if (typeof value === "bigint") {
+        const asNumber = Number(value);
+        return Number.isFinite(asNumber) ? asNumber : null;
+    }
+    return value ?? null;
 }
 
 function parseDateInput(value?: string | null): Date | null {

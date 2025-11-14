@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createRecord } from "@/lib/data-store";
 import { toPersonResponse } from "@/app/api/utils/serialize-person-record";
 import { parseRecordTypeInput } from "./utils";
+import { canCreateRole, type Role } from "@/lib/auth/permissions";
+import { getCurrentUser } from "@/lib/auth/current-user";
 type RequiredValues = {
   fullName: string;
   preferredName: string;
@@ -14,7 +16,6 @@ type RequiredValues = {
   city: string;
   occupation: string;
   languages: string;
-  collaborationStatus: string;
 };
 
 type RequiredFieldSpec = {
@@ -35,12 +36,9 @@ const REQUIRED_FIELDS: RequiredFieldSpec[] = [
   { key: "city", aliases: ["city"], errorKey: "city" },
   { key: "occupation", aliases: ["occupation"], errorKey: "occupation" },
   { key: "languages", aliases: ["languages"], errorKey: "languages", allowArray: true },
-  {
-    key: "collaborationStatus",
-    aliases: ["collaboration_status", "collaborationStatus"],
-    errorKey: "collaboration_status",
-  },
 ];
+
+const ROLE_VALUES: Role[] = ["superadmin", "admin", "editor", "user"];
 
 export async function createUser(request: NextRequest) {
   let body: Record<string, unknown>;
@@ -49,6 +47,11 @@ export async function createUser(request: NextRequest) {
     body = (await request.json()) as Record<string, unknown>;
   } catch {
     return NextResponse.json({ message: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const currentUser = await getCurrentUser(request);
+  if (!currentUser) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
   const recordTypeRaw =
@@ -86,6 +89,24 @@ export async function createUser(request: NextRequest) {
   const notes = getStringValue(body, ["notes"]);
   const secondaryPlatform = getStringValue(body, ["secondary_platform", "secondaryPlatform"]);
   const portfolioUrl = getStringValue(body, ["portfolio_url", "portfolioUrl"]);
+  const collaborationStatus = getStringValue(body, ["collaboration_status", "collaborationStatus"]);
+  const lastContactDateInput = getStringValue(body, ["last_contact_date", "lastContactDate"]);
+
+  const roleInput = getStringValue(body, ["role"]);
+  let role: Role | undefined;
+  if (roleInput) {
+    const normalizedRole = roleInput.toLowerCase();
+    if (!ROLE_VALUES.includes(normalizedRole as Role)) {
+      return NextResponse.json(
+        { message: `role must be one of: ${ROLE_VALUES.join(", ")}` },
+        { status: 400 }
+      );
+    }
+    if (!canCreateRole(currentUser.role, normalizedRole as Role)) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+    role = normalizedRole as Role;
+  }
 
   const followersCount = getNumberValue(body, ["followers_count", "followersCount"]);
   const secondaryFollowersCount = getNumberValue(body, ["secondary_followers_count", "secondaryFollowersCount"]);
@@ -117,6 +138,7 @@ export async function createUser(request: NextRequest) {
   }
 
   const today = new Date().toISOString().slice(0, 10);
+  const lastContactDate = lastContactDateInput ?? today;
 
   try {
     const record = await createRecord(recordType, {
@@ -143,8 +165,9 @@ export async function createUser(request: NextRequest) {
       secondaryFollowersCount: secondaryFollowersCount ?? undefined,
       averageMonthlyReach: averageMonthlyReach ?? undefined,
       portfolioUrl: portfolioUrl ?? undefined,
-      collaborationStatus: requiredValues.collaborationStatus,
-      lastContactDate: today,
+      collaborationStatus: collaborationStatus ?? undefined,
+      lastContactDate,
+      role,
     });
 
     return NextResponse.json({ data: toPersonResponse(record) }, { status: 201 });

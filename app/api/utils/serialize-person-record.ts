@@ -1,4 +1,5 @@
 import { PersonRecord, RecordType } from "@/lib/types";
+import type { Role } from "@/lib/auth/permissions";
 
 export type PersonResponse = {
   record_id: string;
@@ -27,6 +28,7 @@ export type PersonResponse = {
   languages: string | null;
   portfolio_url: string | null;
   last_contact_date: string | null;
+  role: Role;
 };
 
 export function toPersonResponse(record: PersonRecord): PersonResponse {
@@ -57,6 +59,7 @@ export function toPersonResponse(record: PersonRecord): PersonResponse {
     languages: record.languages ?? null,
     portfolio_url: record.portfolioUrl ?? null,
     last_contact_date: record.lastContactDate ?? null,
+    role: record.role,
   };
 }
 
