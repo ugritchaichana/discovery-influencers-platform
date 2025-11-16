@@ -327,6 +327,7 @@ export function DashboardClient({
     statuses: [],
   });
   const [isPending, startTransition] = useTransition();
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   const totalInfluencers = useMemo(
     () => records.filter((record) => record.recordType === "influencer").length,
@@ -365,6 +366,17 @@ export function DashboardClient({
     }
     return Object.values(COUNTRY_CITY_MAP).flat();
   }, [filters.countries]);
+
+  const activeFiltersCount = useMemo(
+    () =>
+      filters.recordTypes.length +
+      filters.engagementTiers.length +
+      filters.countries.length +
+      filters.cities.length +
+      filters.categories.length +
+      filters.statuses.length,
+    [filters]
+  );
 
   const { totalFollowersDisplay, engagementRateDisplay, engagementTierDisplay } = useMemo(() => {
     const parseNumeric = (input: string) => {
@@ -627,6 +639,80 @@ export function DashboardClient({
     setSelectedRecord(null);
     setMode("create");
   };
+
+  const renderFilterControls = (stacked = false) => (
+    <>
+      <div
+        className={
+          stacked
+            ? "flex w-full flex-col gap-3"
+            : "flex flex-wrap gap-3"
+        }
+      >
+        <FilterDropdown
+          label="Record type"
+          options={recordTypeOptions}
+          selected={filters.recordTypes}
+          onToggle={handleRecordTypeToggle}
+        />
+        <FilterDropdown
+          label="Engagement tier"
+          options={engagementOptions as FilterOption<EngagementTier>[]}
+          selected={filters.engagementTiers}
+          onToggle={handleEngagementToggle}
+        />
+        <FilterDropdown
+          label="Country"
+          options={countryOptions}
+          selected={filters.countries}
+          onToggle={toggleCountry}
+        />
+        <FilterDropdown
+          label="City"
+          options={cityOptions}
+          selected={filters.cities}
+          onToggle={handleCityToggle}
+          emptyLabel="Select a country to narrow cities"
+        />
+        <FilterDropdown
+          label="Category"
+          options={categoryOptions}
+          selected={filters.categories}
+          onToggle={handleCategoryToggle}
+        />
+        <FilterDropdown
+          label="Collab status"
+          options={statusOptions as FilterOption<CollaborationStatus>[]}
+          selected={filters.statuses}
+          onToggle={handleStatusToggle}
+        />
+      </div>
+      <div
+        className={
+          stacked
+            ? "flex w-full flex-col gap-3"
+            : "flex flex-wrap items-center gap-3 md:ms-auto"
+        }
+      >
+        <button
+          type="button"
+          className={`rounded-full border border-white/20 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white/60 transition hover:border-white/40 hover:text-white ${stacked ? "w-full" : ""}`}
+          onClick={handleResetFilters}
+        >
+          Reset
+        </button>
+        {permissions.canCreate && (
+          <Button
+            variant="default"
+            className={`${stacked ? "w-full" : "ms-auto"} bg-white text-black hover:bg-white/90`}
+            onClick={openCreate}
+          >
+            + New person
+          </Button>
+        )}
+      </div>
+    </>
+  );
 
   const openEdit = (record: PersonRecord) => {
     setFormState(getInitialFormFromRecord(record));
@@ -1046,63 +1132,142 @@ export function DashboardClient({
         ))}
       </section>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <FilterDropdown
-            label="Record type"
-            options={recordTypeOptions}
-            selected={filters.recordTypes}
-            onToggle={handleRecordTypeToggle}
-          />
-        <FilterDropdown
-            label="Engagement tier"
-            options={engagementOptions as FilterOption<EngagementTier>[]}
-            selected={filters.engagementTiers}
-            onToggle={handleEngagementToggle}
-          />
-        <FilterDropdown
-            label="Country"
-            options={countryOptions}
-            selected={filters.countries}
-            onToggle={toggleCountry}
-          />
-        <FilterDropdown
-            label="City"
-            options={cityOptions}
-            selected={filters.cities}
-            onToggle={handleCityToggle}
-            emptyLabel="Select a country to narrow cities"
-          />
-        <FilterDropdown
-            label="Category"
-            options={categoryOptions}
-            selected={filters.categories}
-            onToggle={handleCategoryToggle}
-          />
-        <FilterDropdown
-            label="Collab status"
-            options={statusOptions as FilterOption<CollaborationStatus>[]}
-            selected={filters.statuses}
-            onToggle={handleStatusToggle}
-          />
+      <div className="hidden w-full flex-col gap-4 md:flex">
+        {renderFilterControls()}
+      </div>
+      <div className="w-full md:hidden">
         <button
-            type="button"
-            className="rounded-full border border-white/20 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white/60 transition hover:border-white/40 hover:text-white"
-            onClick={handleResetFilters}
-          >
-            Reset
-          </button>
-        {permissions.canCreate && (
-          <Button
-            variant="default"
-            className="ms-auto bg-white text-black hover:bg-white/90"
-            onClick={openCreate}
-          >
-            + New person
-          </Button>
+          type="button"
+          className="flex w-full items-center justify-between rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm uppercase tracking-[0.3em] text-white/70"
+          onClick={() => setIsMobileFiltersOpen((prev) => !prev)}
+        >
+          Filters
+          <span className="rounded-full bg-white/15 px-3 py-1 text-[11px]">
+            {activeFiltersCount}
+          </span>
+        </button>
+        {isMobileFiltersOpen && (
+          <div className="mt-4 flex flex-col gap-4">
+            {renderFilterControls(true)}
+          </div>
         )}
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/40 shadow-[0_0_50px_rgba(0,0,0,0.35)]">
+      <div className="w-full md:hidden">
+        {displayedRecords.length === 0 ? (
+          <div className="rounded-2xl border border-white/10 bg-black/40 p-5 text-center text-sm text-white/60">
+            No records match current filters.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {displayedRecords.map((record) => {
+              const canEditRecord = permissions.canEdit || record.recordId === currentUserRecordId;
+              return (
+                <div
+                  key={`${record.recordId}-card`}
+                  className="rounded-3xl border border-white/10 bg-black/40 p-5 shadow-[0_0_35px_rgba(0,0,0,0.4)] transition hover:border-white/30 hover:bg-white/5"
+                  onClick={() => openDetail(record)}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-lg font-semibold text-white">{formatTextValue(record.fullName)}</p>
+                      <p className="text-[11px] uppercase tracking-[0.3em] text-white/50">#{record.recordId}</p>
+                    </div>
+                    <span className="rounded-full border border-white/20 px-3 py-1 text-[11px] uppercase tracking-[0.3em] text-white/70">
+                      {formatUpperValue(record.recordType)}
+                    </span>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-white/70">
+                    <div>
+                      <p className="uppercase tracking-[0.3em] text-[10px] text-white/40">Tier</p>
+                      <p>{formatUpperValue(record.engagementRateTier)}</p>
+                    </div>
+                    <div>
+                      <p className="uppercase tracking-[0.3em] text-[10px] text-white/40">Status</p>
+                      <p>{formatUpperValue(record.collaborationStatus)}</p>
+                    </div>
+                    <div>
+                      <p className="uppercase tracking-[0.3em] text-[10px] text-white/40">Country</p>
+                      <p>{formatTextValue(record.country)}</p>
+                    </div>
+                    <div>
+                      <p className="uppercase tracking-[0.3em] text-[10px] text-white/40">Category</p>
+                      <p>{formatTextValue(record.influencerCategory)}</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1 border-white/30 text-white hover:bg-white/10"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openDetail(record);
+                      }}
+                    >
+                      View
+                    </Button>
+                    {canEditRecord && (
+                      <Button
+                        variant="ghost"
+                        className="flex-1 border border-white/20 bg-white/5 text-white hover:bg-white/10"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openEdit(record);
+                        }}
+                      >
+                        Edit
+                      </Button>
+                    )}
+                    {permissions.canDelete && (
+                      <Button
+                        variant="destructive"
+                        className="flex-1 border border-red-500/40 bg-red-500/10 text-red-200 hover:bg-red-500/20"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openDeleteDialog(record);
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {displayedRecords.length > 0 && (
+          <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-[11px] uppercase tracking-[0.3em] text-white/60">
+            <p>
+              {`Showing ${paginationStart.toLocaleString()}-${paginationEnd.toLocaleString()} of ${filteredRecords.length.toLocaleString()} records`}
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                className="flex-1 rounded-full border border-white/20 px-4 py-2 tracking-[0.3em] transition hover:border-white/60 hover:text-white disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/30"
+                onClick={() =>
+                  setCurrentPage((prev) => Math.max(1, Math.min(totalPages, prev - 1)))
+                }
+                disabled={!canGoPrevious}
+              >
+                Prev
+              </button>
+              <button
+                type="button"
+                className="flex-1 rounded-full border border-white/20 px-4 py-2 tracking-[0.3em] transition hover:border-white/60 hover:text-white disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/30"
+                onClick={() =>
+                  setCurrentPage((prev) => Math.max(1, Math.min(totalPages, prev + 1)))
+                }
+                disabled={!canGoNext}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="hidden overflow-hidden rounded-2xl border border-white/10 bg-black/40 shadow-[0_0_50px_rgba(0,0,0,0.35)] md:block">
         <div className="overflow-x-auto neo-scroll">
           <table className="w-full table-auto text-sm">
             <thead className="bg-white/5 text-left text-[11px] font-semibold uppercase tracking-[0.3em] text-white/40">
@@ -1110,7 +1275,9 @@ export function DashboardClient({
                 {TABLE_COLUMNS.map((column) => (
                   <th key={column.key} className="px-5 py-3">{column.label}</th>
                 ))}
-                {(permissions.canEdit || permissions.canDelete) && <th className="px-5 py-3">actions</th>}
+                {(permissions.canEdit || permissions.canDelete || currentUserRecordId) && (
+                  <th className="px-5 py-3">actions</th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
@@ -1120,40 +1287,48 @@ export function DashboardClient({
                   className="cursor-pointer transition hover:bg-white/5"
                   onClick={() => openDetail(record)}
                 >
-                  {TABLE_COLUMNS.map((column) => {
-                    const cellClass = column.cellClassName
-                      ? `px-5 py-4 align-top text-white/70 ${column.cellClassName}`
-                      : "px-5 py-4 align-top text-white/70";
+                  {(() => {
+                    const canEditRecord = permissions.canEdit || record.recordId === currentUserRecordId;
+                    const showActions = canEditRecord || permissions.canDelete;
                     return (
-                      <td key={`${record.recordId}-${column.key}`} className={cellClass}>
-                        {column.render(record)}
-                      </td>
+                      <>
+                        {TABLE_COLUMNS.map((column) => {
+                          const cellClass = column.cellClassName
+                            ? `px-5 py-4 align-top text-white/70 ${column.cellClassName}`
+                            : "px-5 py-4 align-top text-white/70";
+                          return (
+                            <td key={`${record.recordId}-${column.key}`} className={cellClass}>
+                              {column.render(record)}
+                            </td>
+                          );
+                        })}
+                        {showActions && (
+                          <td className="px-5 py-4 align-top" onClick={(event) => event.stopPropagation()}>
+                            <div className="flex gap-2">
+                              {canEditRecord && (
+                                <Button
+                                  variant="ghost"
+                                  className="h-8 rounded-full bg-white/10 px-4 text-xs text-white hover:text-black hover:bg-white/10"
+                                  onClick={() => openEdit(record)}
+                                >
+                                  Edit
+                                </Button>
+                              )}
+                              {permissions.canDelete && (
+                                <Button
+                                  variant="outline"
+                                  className="h-8 rounded-full border border-red-500/60 px-4 text-xs text-red-400 hover:bg-red-500/10"
+                                  onClick={() => openDeleteDialog(record)}
+                                >
+                                  Delete
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        )}
+                      </>
                     );
-                  })}
-                  {(permissions.canEdit || permissions.canDelete) && (
-                    <td className="px-5 py-4 align-top" onClick={(event) => event.stopPropagation()}>
-                      <div className="flex gap-2">
-                        {permissions.canEdit && (
-                          <Button
-                            variant="ghost"
-                            className="h-8 rounded-full bg-white/10 px-4 text-xs text-white hover:text-black hover:bg-white/10"
-                            onClick={() => openEdit(record)}
-                          >
-                            Edit
-                          </Button>
-                        )}
-                        {permissions.canDelete && (
-                          <Button
-                            variant="outline"
-                            className="h-8 rounded-full border border-red-500/60 px-4 text-xs text-red-400 hover:bg-red-500/10"
-                            onClick={() => openDeleteDialog(record)}
-                          >
-                            Delete
-                          </Button>
-                        )}
-                      </div>
-                    </td>
-                  )}
+                  })()}
                 </tr>
               ))}
             </tbody>
@@ -1714,10 +1889,10 @@ function FilterDropdown<T extends string>({
   const toggleOpen = () => setIsOpen((prev) => !prev);
 
   return (
-    <div ref={containerRef} className="relative text-white">
+    <div ref={containerRef} className="relative w-full text-white sm:w-auto">
       <button
         type="button"
-        className="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white/60 transition hover:border-white/40 hover:text-white"
+        className="flex w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white/60 transition hover:border-white/40 hover:text-white sm:w-auto sm:justify-start"
         onClick={toggleOpen}
         aria-expanded={isOpen}
         aria-haspopup="true"
@@ -1730,7 +1905,9 @@ function FilterDropdown<T extends string>({
         )}
       </button>
       {isOpen && (
-        <div className="absolute right-0 z-40 mt-2 w-64 rounded-2xl border border-white/10 bg-[#0b0b0b]/95 p-3 shadow-[0_0_40px_rgba(0,0,0,0.45)] backdrop-blur">
+        <div
+          className="absolute left-1/2 z-40 mt-2 w-[calc(100vw-3rem)] max-w-sm -translate-x-1/2 rounded-2xl border border-white/10 bg-[#0b0b0b]/95 p-3 shadow-[0_0_40px_rgba(0,0,0,0.45)] backdrop-blur sm:left-auto sm:right-0 sm:w-64 sm:max-w-none sm:translate-x-0"
+        >
           {hasOptions ? (
             <div className="flex max-h-60 flex-col gap-2 overflow-y-auto pr-1 neo-scroll">
               {options.map((option) => {

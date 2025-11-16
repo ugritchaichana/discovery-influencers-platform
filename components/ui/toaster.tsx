@@ -11,7 +11,7 @@ import {
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast";
-import { type ToastStatus, useToast } from "@/components/ui/use-toast";
+import { dismiss, type ToastStatus, useToast } from "@/components/ui/use-toast";
 
 function ToastStatusIndicator({ status }: { status?: ToastStatus }) {
   if (!status) {
@@ -47,9 +47,18 @@ export function Toaster() {
   const { toasts } = useToast();
 
   return (
-    <ToastProvider>
+    <ToastProvider duration={5000} swipeDirection="right">
       {toasts.map(({ id, title, description, action, closeLabel, status, ...props }) => (
-        <Toast key={id} {...props}>
+        <Toast
+          key={id}
+          {...props}
+          onOpenChange={(open) => {
+            props.onOpenChange?.(open);
+            if (!open) {
+              dismiss(id);
+            }
+          }}
+        >
           <ToastStatusIndicator status={status} />
           <ToastContainer>
             {title && <ToastTitle>{title}</ToastTitle>}

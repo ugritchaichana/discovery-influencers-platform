@@ -83,8 +83,8 @@ export function DashboardUserControls({ user }: DashboardUserControlsProps) {
 
   return (
     <>
-      <div className="flex items-center gap-4 rounded-full border border-white/10 bg-white/5 px-5 py-2 text-white">
-        <div className="text-right">
+      <div className="flex w-full flex-col gap-4 rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-white sm:w-auto sm:flex-row sm:items-center">
+        <div className="text-center sm:text-right">
           <p className="text-[11px] uppercase tracking-[0.3em] text-white/40">Role</p>
           <p className="text-sm font-semibold text-white">{user.role}</p>
         </div>
@@ -93,13 +93,16 @@ export function DashboardUserControls({ user }: DashboardUserControlsProps) {
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className="border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white disabled:border-white/15 disabled:text-white/50"
+              className="w-full border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white disabled:border-white/15 disabled:text-white/50 sm:w-auto"
               disabled={isPending}
             >
               Account
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-56 border-white/15 bg-[#0d0d0d] p-3 text-sm text-white">
+          <PopoverContent
+            align="end"
+            className="w-[calc(100vw-3rem)] border-white/15 bg-[#0d0d0d] p-3 text-sm text-white sm:w-56"
+          >
             <div className="flex flex-col gap-2">
               <Button
                 variant="ghost"
@@ -122,7 +125,7 @@ export function DashboardUserControls({ user }: DashboardUserControlsProps) {
       </div>
 
       <AlertDialog open={isAccountDialogOpen} onOpenChange={setIsAccountDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-lg border-white/10 bg-[#0d0d0d]">
           <AlertDialogHeader>
             <AlertDialogTitle>Account overview</AlertDialogTitle>
             <AlertDialogDescription>

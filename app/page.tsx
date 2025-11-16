@@ -9,7 +9,7 @@ import { DashboardClient } from "./dashboard/dashboard-client";
 import { DashboardUserControls } from "./dashboard/user-controls";
 
 export const metadata = {
-  title: "Dashboard | Discovery Platform",
+  title: "Discovery Influencers Platform",
 };
 
 const RECORD_TYPES: RecordType[] = ["individual", "influencer"];
