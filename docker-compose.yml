@@ -1,3 +1,27 @@
+
+# services:
+#   web:
+#     build:
+#       context: .
+#       target: dev
+#     ports:
+#       - "3000:3000"
+#     environment:
+#       NODE_ENV: development
+#       NEXT_TELEMETRY_DISABLED: "1"
+#       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?pgbouncer=true
+#       DIRECT_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB}?sslmode=require
+#     volumes:
+#       - .:/app
+#       - /app/node_modules
+#     command: ["sh", "-c", "pnpm prisma generate && pnpm dev"]
+
+
+
+
+
+
+# run docker-compose up db+web
 services:
   web:
     build:
@@ -9,12 +33,11 @@ services:
       NODE_ENV: development
       NEXT_TELEMETRY_DISABLED: "1"
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT}/${POSTGRES_DB}
-    depends_on:
-      db:
-        condition: service_healthy
+      DIRECT_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT}/${POSTGRES_DB}
     volumes:
       - .:/app
       - /app/node_modules
+    command: ["sh", "-c", "pnpm prisma generate && pnpm dev"]
 
   db:
     image: postgres:16-alpine
