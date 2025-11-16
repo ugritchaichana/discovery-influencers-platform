@@ -643,11 +643,11 @@ export function DashboardClient({
   const renderFilterControls = (stacked = false) => {
     const stackedGrid = "grid w-full gap-3 grid-cols-1";
     const compactGrid =
-      "grid w-fit place-items-center gap-0 [grid-template-columns:repeat(2,max-content)] sm:[grid-template-columns:repeat(3,max-content)]";
+      "grid w-full gap-3 grid-cols-1 md:grid-cols-3 lg:w-fit lg:gap-2 lg:[grid-template-columns:repeat(6,max-content)]";
     return (
       <>
         <div
-          className={stacked ? stackedGrid : `${compactGrid} mx-auto`}
+          className={stacked ? stackedGrid : compactGrid}
         >
           <FilterDropdown
             label="Record type"
@@ -1729,7 +1729,7 @@ export function DashboardClient({
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <FormField label="Languages">
-                      <div className="flex flex-wrap gap-3">
+                      <div className="grid w-full grid-cols-1 place-items-center gap-3 md:grid-cols-2 lg:place-items-start">
                         {LANGUAGE_OPTIONS.map((language) => {
                           const checked = selectedLanguages.includes(language);
                           return (
@@ -1910,7 +1910,7 @@ function FilterDropdown<T extends string>({
           className="absolute left-1/2 z-40 mt-2 w-[calc(100vw-3rem)] max-w-sm -translate-x-1/2 rounded-2xl border border-white/10 bg-[#0b0b0b]/95 p-3 shadow-[0_0_40px_rgba(0,0,0,0.45)] backdrop-blur sm:left-auto sm:right-0 sm:w-64 sm:max-w-none sm:translate-x-0"
         >
           {hasOptions ? (
-            <div className="flex max-h-60 flex-col gap-2 overflow-y-auto pr-1 neo-scroll">
+            <div className="grid w-full max-h-60 grid-cols-1 place-items-center gap-2 overflow-y-auto pr-1 neo-scroll md:grid-cols-2 lg:place-items-start">
               {options.map((option) => {
                 const checked = selected.includes(option.value);
                 return (
