@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { format, parseISO } from "date-fns";
@@ -23,6 +23,7 @@ import { toast } from "@/components/ui/use-toast";
 import type { Role } from "@/lib/auth/permissions";
 import type { PersonRecord, RecordType } from "@/lib/types";
 import { createLoadingToast, resolveToast } from "@/lib/toast-feedback";
+import { DASHBOARD_ACCOUNT_EVENT, type DashboardAccountEventDetail } from "./account-event";
 
 const formatTextValue = (value?: string | null) => {
   if (value === null || value === undefined) {
@@ -45,6 +46,7 @@ type DashboardClientProps = {
     canDelete: boolean;
   };
   currentUserRole: Role;
+  currentUserRecordId: string | null;
 };
 
 type FormMode = "create" | "edit" | "view";
@@ -304,7 +306,12 @@ function parseDateOrUndefined(value?: string | null) {
   }
 }
 
-export function DashboardClient({ records, permissions, currentUserRole }: DashboardClientProps) {
+export function DashboardClient({
+  records,
+  permissions,
+  currentUserRole,
+  currentUserRecordId,
+}: DashboardClientProps) {
   const router = useRouter();
   const [mode, setMode] = useState<FormMode | null>(null);
 
@@ -627,21 +634,32 @@ export function DashboardClient({ records, permissions, currentUserRole }: Dashb
     setMode("edit");
   };
 
+  const openDetail = useCallback((record: PersonRecord) => {
+    setFormState(getInitialFormFromRecord(record));
+    setSelectedRecord(record);
+    setMode("view");
+  }, []);
+
   const closeForm = () => {
     setMode(null);
     setFormState(createDefaultFormState());
     setSelectedRecord(null);
   };
 
-  const openDetail = (record: PersonRecord) => {
-    setFormState(getInitialFormFromRecord(record));
-    setSelectedRecord(record);
-    setMode("view");
-  };
-
   const enterEditMode = (event?: React.MouseEvent<HTMLButtonElement>) => {
     event?.preventDefault();
     event?.stopPropagation();
+    const targetRecordId = selectedRecord?.recordId ?? formState.recordId ?? null;
+    const canEditSelected = permissions.canEdit || (targetRecordId !== null && targetRecordId === currentUserRecordId);
+    if (!canEditSelected) {
+      toast({
+        title: "Insufficient permissions",
+        description: "You can only edit records you own.",
+        status: "error",
+        variant: "destructive",
+      });
+      return;
+    }
     if (selectedRecord) {
       setFormState(getInitialFormFromRecord(selectedRecord));
       setMode("edit");
@@ -706,6 +724,40 @@ export function DashboardClient({ records, permissions, currentUserRole }: Dashb
 
     setDeleteTarget(record);
   };
+
+  useEffect(() => {
+    const handleAccountModalOpen = (event: Event) => {
+      const detail = (event as CustomEvent<DashboardAccountEventDetail>).detail;
+      const recordId = detail?.recordId ?? undefined;
+      if (!recordId) {
+        toast({
+          title: "Profile not linked",
+          description: "Your account is not connected to a person record yet.",
+          status: "error",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const record = records.find((entry) => entry.recordId === recordId);
+      if (!record) {
+        toast({
+          title: "Record missing",
+          description: "We could not find the profile associated with your account.",
+          status: "error",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      openDetail(record);
+    };
+
+    window.addEventListener(DASHBOARD_ACCOUNT_EVENT, handleAccountModalOpen as EventListener);
+    return () => {
+      window.removeEventListener(DASHBOARD_ACCOUNT_EVENT, handleAccountModalOpen as EventListener);
+    };
+  }, [openDetail, records]);
 
   const closeDeleteDialog = () => {
     if (!isPending) {
@@ -897,6 +949,10 @@ export function DashboardClient({ records, permissions, currentUserRole }: Dashb
     });
   };
 
+  const isViewingOwnRecord =
+    mode === "view" && (selectedRecord?.recordId ?? formState.recordId ?? null) === currentUserRecordId;
+  const canEditSelectedRecord = permissions.canEdit || isViewingOwnRecord;
+
   const actionButtons = (() => {
     if (mode === "view") {
       return (
@@ -909,7 +965,7 @@ export function DashboardClient({ records, permissions, currentUserRole }: Dashb
           >
             Close
           </Button>
-          {permissions.canEdit && (
+          {canEditSelectedRecord && (
             <Button
               type="button"
               variant="default"

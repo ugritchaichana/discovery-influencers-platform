@@ -44,12 +44,13 @@ export default async function Home() {
               Discovery Influencers Platform
             </h1>
           </div>
-          <DashboardUserControls role={currentUser.role} />
+          <DashboardUserControls user={currentUser} />
         </header>
           <DashboardClient
             records={records}
             permissions={permissions}
             currentUserRole={currentUser.role}
+            currentUserRecordId={currentUser.personRecordId}
           />
       </div>
     </div>
