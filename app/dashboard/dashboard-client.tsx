@@ -640,60 +640,60 @@ export function DashboardClient({
     setMode("create");
   };
 
-  const renderFilterControls = (stacked = false) => (
-    <>
-      <div
-        className={
-          stacked
-            ? "flex w-full flex-col gap-3"
-            : "flex flex-wrap gap-3"
-        }
-      >
-        <FilterDropdown
-          label="Record type"
-          options={recordTypeOptions}
-          selected={filters.recordTypes}
-          onToggle={handleRecordTypeToggle}
-        />
-        <FilterDropdown
-          label="Engagement tier"
-          options={engagementOptions as FilterOption<EngagementTier>[]}
-          selected={filters.engagementTiers}
-          onToggle={handleEngagementToggle}
-        />
-        <FilterDropdown
-          label="Country"
-          options={countryOptions}
-          selected={filters.countries}
-          onToggle={toggleCountry}
-        />
-        <FilterDropdown
-          label="City"
-          options={cityOptions}
-          selected={filters.cities}
-          onToggle={handleCityToggle}
-          emptyLabel="Select a country to narrow cities"
-        />
-        <FilterDropdown
-          label="Category"
-          options={categoryOptions}
-          selected={filters.categories}
-          onToggle={handleCategoryToggle}
-        />
-        <FilterDropdown
-          label="Collab status"
-          options={statusOptions as FilterOption<CollaborationStatus>[]}
-          selected={filters.statuses}
-          onToggle={handleStatusToggle}
-        />
-      </div>
-      <div
-        className={
-          stacked
-            ? "flex w-full flex-col gap-3"
-            : "flex flex-wrap items-center gap-3 md:ms-auto"
-        }
-      >
+  const renderFilterControls = (stacked = false) => {
+    const stackedGrid = "grid w-full gap-3 grid-cols-1";
+    const compactGrid =
+      "grid w-fit place-items-center gap-0 [grid-template-columns:repeat(2,max-content)] sm:[grid-template-columns:repeat(3,max-content)]";
+    return (
+      <>
+        <div
+          className={stacked ? stackedGrid : `${compactGrid} mx-auto`}
+        >
+          <FilterDropdown
+            label="Record type"
+            options={recordTypeOptions}
+            selected={filters.recordTypes}
+            onToggle={handleRecordTypeToggle}
+          />
+          <FilterDropdown
+            label="Engagement tier"
+            options={engagementOptions as FilterOption<EngagementTier>[]}
+            selected={filters.engagementTiers}
+            onToggle={handleEngagementToggle}
+          />
+          <FilterDropdown
+            label="Country"
+            options={countryOptions}
+            selected={filters.countries}
+            onToggle={toggleCountry}
+          />
+          <FilterDropdown
+            label="City"
+            options={cityOptions}
+            selected={filters.cities}
+            onToggle={handleCityToggle}
+            emptyLabel="Select a country to narrow cities"
+          />
+          <FilterDropdown
+            label="Category"
+            options={categoryOptions}
+            selected={filters.categories}
+            onToggle={handleCategoryToggle}
+          />
+          <FilterDropdown
+            label="Collab status"
+            options={statusOptions as FilterOption<CollaborationStatus>[]}
+            selected={filters.statuses}
+            onToggle={handleStatusToggle}
+          />
+        </div>
+        <div
+          className={
+            stacked
+              ? "flex w-full flex-col gap-3"
+              : "flex flex-wrap items-center gap-3 md:ms-auto"
+          }
+        >
         <button
           type="button"
           className={`rounded-full border border-white/20 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white/60 transition hover:border-white/40 hover:text-white ${stacked ? "w-full" : ""}`}
@@ -710,9 +710,10 @@ export function DashboardClient({
             + New person
           </Button>
         )}
-      </div>
-    </>
-  );
+        </div>
+      </>
+    );
+  };
 
   const openEdit = (record: PersonRecord) => {
     setFormState(getInitialFormFromRecord(record));
