@@ -55,3 +55,6 @@
 
     5. Run
     Node : ` pnpm dev ` or Docker : ` docker-compose up --build web `
+
+### RunTest
+    Bash : `pnpm test`

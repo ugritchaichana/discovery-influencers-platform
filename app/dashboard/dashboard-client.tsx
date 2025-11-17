@@ -1199,7 +1199,7 @@ export function DashboardClient({
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Button
                       variant="outline"
-                      className="flex-1 border-white/30 text-white hover:bg-white/10"
+                      className="flex-1 border-white/30 text-black hover:bg-white/10"
                       onClick={(event) => {
                         event.stopPropagation();
                         openDetail(record);
