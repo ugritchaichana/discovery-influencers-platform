@@ -1,0 +1,6 @@
+{
+  "version": 2,
+  "framework": "nextjs",
+  "installCommand": "corepack enable && corepack prepare pnpm@9.12.3 --activate && PNPM_USE_NODE_FETCH=1 PNPM_DISABLE_SELF_UPDATE_CHECK=1 pnpm install",
+  "buildCommand": "pnpm build"
+}
