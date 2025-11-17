@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import prisma from "./prisma";
 
 type LogLevel = "info" | "warn" | "error";
@@ -10,7 +11,7 @@ interface LogEntry {
   level: LogLevel;
   scope: string;
   message: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Prisma.InputJsonObject;
 }
 
 // Batch configuration for Supabase free tier optimization
@@ -35,20 +36,25 @@ function serializeError(error: unknown) {
   return { message: "Unknown error", value: error };
 }
 
-function sanitizeMeta(meta?: LogDetails) {
+function sanitizeMeta(meta?: LogDetails): Prisma.InputJsonObject | undefined {
   if (!meta) {
     return undefined;
   }
 
-  if (!("error" in meta) || meta.error === undefined) {
-    return meta;
-  }
+  const normalizedMeta = (() => {
+    if (!("error" in meta) || meta.error === undefined) {
+      return meta;
+    }
 
-  const { error, ...rest } = meta;
-  return {
-    ...rest,
-    error: serializeError(error),
-  };
+    const { error, ...rest } = meta;
+    return {
+      ...rest,
+      error: serializeError(error),
+    };
+  })();
+
+  // Ensure metadata is JSON-serializable before persisting to Prisma
+  return JSON.parse(JSON.stringify(normalizedMeta)) as Prisma.InputJsonObject;
 }
 
 async function flushLogsToDatabase() {
