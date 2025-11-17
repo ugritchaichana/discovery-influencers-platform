@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { deleteRecord } from "@/lib/data-store";
 import { inferRecordTypeFromId } from "../../handlers/utils";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("api:users:delete-by-slug");
 
 export async function deleteUserBySlug(
   _request: NextRequest,
@@ -21,10 +24,16 @@ export async function deleteUserBySlug(
     );
   }
 
-  const deleted = await deleteRecord(normalized);
-  if (!deleted) {
-    return NextResponse.json({ message: "Record not found" }, { status: 404 });
-  }
+  try {
+    const deleted = await deleteRecord(normalized);
+    if (!deleted) {
+      return NextResponse.json({ message: "Record not found" }, { status: 404 });
+    }
 
-  return new NextResponse(null, { status: 204 });
+    logger.info("Deleted user record", { recordId: normalized });
+    return new NextResponse(null, { status: 204 });
+  } catch (error) {
+    logger.error("Failed to delete user", { error, recordId: normalized });
+    return NextResponse.json({ message: "Unable to delete record" }, { status: 500 });
+  }
 }

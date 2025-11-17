@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DISCOVERY INFLUENCERS PLAYFORM
 
-## Getting Started
+### STACK
+- Frontend : `Next/React` `Tailwind` `Shadcn`
+- Backend : `Next((API Routes)`
+- Database : `PostgreSQL`
+- Hosting : `Vercel(WebApp)` `Supabase(Database)`
+- Auth : `Next Auth`
+- Testing : `Jest` `Postman`
 
-First, run the development server:
+### SETUP
+    1. Clone Git Repo
+    Bash : `` https://github.com/ugritchaichana/discovery-influencers-platform.git ``
+    
+    2. Install Package
+    Bash : ` pnpm install `
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+    3. Create .env 
+```
+    # super admin
+    superadmin=superadmin@superadmin.com
+    password=superadmin
+
+    # auth
+    AUTH_SECRET=cqCWEKBeUDiLaZ/yoDyo6iMc3dl12NRnchL2TR4kq/U=
+
+    PRISMA_DISABLE_PREPARED_STATEMENTS=true
+
+    # db postgres docker
+    POSTGRES_HOST=db
+    POSTGRES_PORT=5432
+    POSTGRES_DB=postgres
+    POSTGRES_USER=postgres
+    POSTGRES_PASSWORD=postgres
+    DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
+    DIRECT_URL=postgresql://postgres:postgres@db:5432/postgres
+    DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres
+    DIRECT_URL=postgresql://postgres:postgres@localhost:5432/postgres
+
+    # db postgres supabase
+    # POSTGRES_HOST=aws-1-ap-south-1.pooler.supabase.com
+    # POSTGRES_PORT=6543
+    # POSTGRES_DB=postgres
+    # POSTGRES_USER=postgres.pafidnvdoeqtewsqxqju
+    # POSTGRES_PASSWORD=discoverty_INF@Ugrit
+    # DATABASE_URL=postgresql://postgres.pafidnvdoeqtewsqxqju:discoverty_INF@Ugrit@aws-1-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true
+    # DIRECT_URL=postgresql://postgres.pafidnvdoeqtewsqxqju:discoverty_INF@Ugrit@aws-1-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+    4. Install Database
+    Bash : `Docker-compose up --build db`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+    4. Setup DB
+    Bash : ` npx prisma generate ` and ` npm prisma db push `
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+    5. Run
+    Node : ` pnpm dev ` or Docker : ` docker-compose up --build web `

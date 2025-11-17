@@ -3,19 +3,28 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAccount, listAccounts } from "@/lib/auth/account-service";
 import { canCreateRole, type Role } from "@/lib/auth/permissions";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("api:auth:users");
 
 export async function GET(request: NextRequest) {
-  const currentUser = await getCurrentUser(request);
-  if (!currentUser) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
+  try {
+    const currentUser = await getCurrentUser(request);
+    if (!currentUser) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
 
-  if (currentUser.role === "user") {
-    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
-  }
+    if (currentUser.role === "user") {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
 
-  const accounts = await listAccounts();
-  return NextResponse.json({ data: accounts });
+    const accounts = await listAccounts();
+    logger.info("Listed accounts", { actorId: currentUser.id, count: accounts.length });
+    return NextResponse.json({ data: accounts });
+  } catch (error) {
+    logger.error("List accounts error", { error });
+    return NextResponse.json({ message: "Unable to list accounts" }, { status: 500 });
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -45,6 +54,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
+    logger.info("Create account request", { actorId: currentUser.id, role });
+
     const account = await createAccount({
       email,
       password,
@@ -52,9 +63,10 @@ export async function POST(request: NextRequest) {
       personRecordId,
     });
 
+    logger.info("Account created", { actorId: currentUser.id, accountId: account.id, role: account.role });
     return NextResponse.json({ data: account }, { status: 201 });
   } catch (error) {
-    console.error("Create account error", error);
+    logger.error("Create account error", { error });
     return NextResponse.json({ message: "Unable to create account" }, { status: 500 });
   }
 }

@@ -47,3 +47,15 @@ enum Role {
     editor
     user
 }
+
+model ApplicationLog {
+    id        String   @id @default(cuid())
+    timestamp DateTime @default(now())
+    level     String   // "info", "warn", "error"
+    scope     String   // e.g., "auth/login", "users/get"
+    message   String
+    metadata  Json?    // Additional context as JSONB
+    
+    @@index([timestamp])
+    @@map("application_logs")
+}

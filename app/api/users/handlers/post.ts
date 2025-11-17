@@ -5,6 +5,9 @@ import { toPersonResponse } from "@/app/api/utils/serialize-person-record";
 import { parseRecordTypeInput } from "./utils";
 import { canCreateRole, type Role } from "@/lib/auth/permissions";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("api:users:create");
 type RequiredValues = {
   fullName: string;
   preferredName: string;
@@ -141,6 +144,12 @@ export async function createUser(request: NextRequest) {
   const lastContactDate = lastContactDateInput ?? today;
 
   try {
+    logger.info("Create user request", {
+      actorId: currentUser.id,
+      recordType,
+      role,
+    });
+
     const record = await createRecord(recordType, {
       recordId: recordId ?? undefined,
       fullName: requiredValues.fullName,
@@ -170,8 +179,10 @@ export async function createUser(request: NextRequest) {
       role,
     });
 
+    logger.info("User record created", { recordId: record.recordId, role: record.role ?? role });
     return NextResponse.json({ data: toPersonResponse(record) }, { status: 201 });
-  } catch {
+  } catch (error) {
+    logger.error("Create user error", { error, actorId: currentUser.id });
     return NextResponse.json(
       { message: "Unable to save record" },
       { status: 500 }

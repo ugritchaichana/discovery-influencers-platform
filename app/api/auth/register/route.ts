@@ -5,6 +5,9 @@ import { createAccount } from "@/lib/auth/account-service";
 import { createAuthToken, setAuthCookie } from "@/lib/auth/session";
 import { toPersonResponse } from "@/app/api/utils/serialize-person-record";
 import { parseRecordTypeInput } from "@/app/api/users/handlers/utils";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("api:auth:register");
 
 const REQUIRED_TEXT_FIELDS = [
   "full_name",
@@ -83,6 +86,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
     }
 
+    logger.info("Registration attempt", { email, recordType });
+
     const occupationValue = occupation;
     const cityValue = city;
 
@@ -109,7 +114,7 @@ export async function POST(request: NextRequest) {
       typeof averageMonthlyReach === "number" &&
       averageMonthlyReach > 0
     ) {
-      engagementRate = (totalFollowersCount / averageMonthlyReach) / 4;
+      engagementRate = totalFollowersCount / averageMonthlyReach / 4;
     }
 
     let engagementRateTier = getStringValue(body, ["engagement_rate_tier", "engagementRateTier"]);
@@ -165,21 +170,25 @@ export async function POST(request: NextRequest) {
       role: account.role,
     });
 
-    const response = NextResponse.json({
-      data: {
-        account: {
-          id: account.id,
-          email: account.email,
-          role: account.role,
+    const response = NextResponse.json(
+      {
+        data: {
+          account: {
+            id: account.id,
+            email: account.email,
+            role: account.role,
+          },
+          profile: toPersonResponse(record),
         },
-        profile: toPersonResponse(record),
       },
-    }, { status: 201 });
+      { status: 201 }
+    );
 
     setAuthCookie(response, token);
+    logger.info("Registration successful", { accountId: account.id, profileId: record.recordId });
     return response;
   } catch (error) {
-    console.error("Register error", error);
+    logger.error("Register error", { error });
     return NextResponse.json({ message: "Unable to register" }, { status: 500 });
   }
 }

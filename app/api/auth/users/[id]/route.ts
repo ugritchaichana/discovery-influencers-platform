@@ -8,6 +8,9 @@ import {
 } from "@/lib/auth/account-service";
 import { canCreateRole, canDeleteRole, canUpdateRole, type Role } from "@/lib/auth/permissions";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("api:auth:users:id");
 
 export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const currentUser = await getCurrentUser(request);
@@ -60,6 +63,8 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
 
     const password = body.password ?? undefined;
 
+    logger.info("Updating account", { actorId: currentUser.id, targetId: target.id });
+
     const updated = await updateAccount({
       id: target.id,
       email,
@@ -67,9 +72,10 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
       role: desiredRole,
     });
 
+    logger.info("Account updated", { targetId: updated.id, role: updated.role });
     return NextResponse.json({ data: updated });
   } catch (error) {
-    console.error("Update account error", error);
+    logger.error("Update account error", { error, targetId: target.id });
     return NextResponse.json({ message: "Unable to update account" }, { status: 500 });
   }
 }
@@ -95,11 +101,13 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
   }
 
   try {
+    logger.info("Deleting account", { actorId: currentUser.id, targetId: target.id });
     await deleteAccount(target.id);
 
+    logger.info("Account deleted", { targetId: target.id });
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    console.error("Delete account error", error);
+    logger.error("Delete account error", { error, targetId: target.id });
     return NextResponse.json({ message: "Unable to delete account" }, { status: 500 });
   }
 }

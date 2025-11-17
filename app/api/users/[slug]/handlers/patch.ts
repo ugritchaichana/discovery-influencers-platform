@@ -5,6 +5,9 @@ import { toPersonResponse } from "@/app/api/utils/serialize-person-record";
 import { inferRecordTypeFromId, parseRecordTypeInput } from "../../handlers/utils";
 import { canCreateRole, type Role } from "@/lib/auth/permissions";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("api:users:patch-by-slug");
 
 const ROLE_VALUES: Role[] = ["superadmin", "admin", "editor", "user"];
 
@@ -160,12 +163,18 @@ export async function patchUserBySlug(
 
   assignString(updates, "lastContactDate", body, ["last_contact_date", "lastContactDate"]);
 
-  const result = await updateRecord(normalized, updates);
-  if (!result) {
-    return NextResponse.json({ message: "Record not found" }, { status: 404 });
-  }
+  try {
+    const result = await updateRecord(normalized, updates);
+    if (!result) {
+      return NextResponse.json({ message: "Record not found" }, { status: 404 });
+    }
 
-  return NextResponse.json({ data: toPersonResponse(result) });
+    logger.info("Updated user record", { recordId: normalized, actorId: currentUser.id });
+    return NextResponse.json({ data: toPersonResponse(result) });
+  } catch (error) {
+    logger.error("Failed to update user", { error, recordId: normalized });
+    return NextResponse.json({ message: "Unable to update record" }, { status: 500 });
+  }
 }
 
 function assignString(
